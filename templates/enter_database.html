@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Register page</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="profile">
+        <div class="container d-flex" style="align-content: center; justify-content: center;">
+            <div class="details">
+                <div class=" row justify-content-center">
+                    <div class="col-sm-8">
+
+                        <h2>Enter Database</h2>
+                        <form action="/enter_database" method="POST">
+                            <div class="form-group">
+                                <label for="email">Username:</label>
+                                <input type="text" class="form-control" id="username" placeholder="Enter username"
+                                    name="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="pwd">Password:</label>
+                                <input type="password" class="form-control" id="pwd" placeholder="Enter password"
+                                    name="password">
+                            </div>
+                            <div class="form-group">
+                                <label for="pwd">Database:</label>
+                                <input type="text" class="form-control" id="pwd" placeholder="Enter database name"
+                                    name="database">
+                            </div>
+
+                            <button type="submit" class="btn btn-warning">Submit</button>
+                            <a href="/create_database" class="btn btn-warning">Create</a>
+                        </form>
+
+                    </div>
+                </div>
+                {% if error %}
+                <div>
+                    <div id="myModal" class="modal">
+                        <!-- Modal content -->
+                        <div class="modal-content" id="modal_close">
+                            <span class="close">&times;</span>
+                            <p>{{error}}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</body>
+<style>
+    .btnsubmit {
+        color: #ffffff;
+        font-size: 1.2rem;
+        font-weight: 400;
+        text-decoration: none;
+        transition: color 0.3s ease-out;
+        background: linear-gradient(-45deg, #EE7752, #E73C7E, #23A6D5, #23D5AB);
+        background-size: 400% 400%;
+        -webkit-animation: gradbar 15s ease infinite;
+        -moz-animation: gradbar 15s ease infinite;
+        animation: gradbar 15s ease infinite;
+        padding: 4px 6px 4px 6px;
+        border-radius: 5px;
+        padding: 2px 10px 2px 10px;
+        border-style: none;
+    }
+
+    .profile {
+        width: 100%;
+        height: 100vh;
+        background: linear-gradient(-45deg, #EE7752, #E73C7E, #23A6D5, #23D5AB);
+        background-size: 400% 400%;
+        -webkit-animation: gradbar 15s ease infinite;
+        -moz-animation: gradbar 15s ease infinite;
+        animation: gradbar 15s ease infinite;
+        padding: 4px 6px 4px 6px;
+        border-radius: 3px;
+    }
+
+    .details {
+
+        background: rgba(255, 255, 255, 0.777);
+        width: max-content;
+        min-width: 30rem;
+        margin-top: 3rem;
+        padding: 3rem;
+        border-radius: 3rem;
+        border-color: white;
+        border-width: 5px;
+        border-style: solid;
+    }
+</style>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Lato', 'Arial', sans-serif;
+    }
+
+    /* BASIC SETUP */
+
+    .page-wrapper {
+        width: 100%;
+        height: auto;
+    }
+
+    .nav-wrapper {
+        width: 100%;
+        position: -webkit-sticky;
+        /* Safari */
+        position: sticky;
+        top: 0;
+        background-color: #fff;
+    }
+
+    .grad-bar {
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(-45deg, #EE7752, #E73C7E, #23A6D5, #23D5AB);
+        background-size: 400% 400%;
+        -webkit-animation: gradbar 15s ease infinite;
+        -moz-animation: gradbar 15s ease infinite;
+        animation: gradbar 15s ease infinite;
+    }
+
+    /* NAVIGATION */
+
+    .navbar {
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+        align-items: center;
+        height: 50px;
+        overflow: hidden;
+        background: linear-gradient(-45deg, #d6c2bc, #d5b4c1, #9abdca, #afd2ca);
+        background-size: 400% 400%;
+        -webkit-animation: gradbar 15s ease infinite;
+        -moz-animation: gradbar 15s ease infinite;
+        animation: gradbar 15s ease infinite;
+        padding: 4px 6px 4px 6px;
+        border-radius: 3px;
+    }
+
+    .navbar img {
+        height: 16px;
+        width: auto;
+        justify-self: start;
+        margin-left: 20px;
+    }
+
+    .navbar ul {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        justify-self: end;
+
+    }
+
+    .nav-item a {
+        color: #ffffff;
+        font-size: 1.2rem;
+        font-weight: 400;
+        text-decoration: none;
+        transition: color 0.3s ease-out;
+        background: linear-gradient(-45deg, #EE7752, #E73C7E, #23A6D5, #23D5AB);
+        background-size: 400% 400%;
+        -webkit-animation: gradbar 15s ease infinite;
+        -moz-animation: gradbar 15s ease infinite;
+        animation: gradbar 15s ease infinite;
+        padding: 4px 6px 4px 6px;
+        border-radius: 5px;
+        padding: 5px 10px 5px 10px;
+    }
+
+    /* .nav-item a:hover {
+      color: #3b6bb2;
+    } */
+
+    /* SECTIONS */
+
+    .headline {
+        width: 100%;
+        height: 50vh;
+        min-height: 350px;
+        /* background:  url('../static/coverphoto.png'); */
+        background-size: cover;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(-45deg, #EE7752, #E73C7E, #23A6D5, #23D5AB);
+        background-size: 400% 400%;
+        -webkit-animation: gradbar 15s ease infinite;
+        -moz-animation: gradbar 15s ease infinite;
+        animation: gradbar 15s ease infinite;
+        padding: 4px 6px 4px 6px;
+        border-radius: 3px;
+    }
+
+
+    /* MOBILE MENU & ANIMATION */
+
+    .menu-toggle .bar {
+        width: 25px;
+        height: 3px;
+        background-color: #3f3f3f;
+        margin: 5px auto;
+        -webkit-transition: all 0.3s ease-in-out;
+        -o-transition: all 0.3s ease-in-out;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .menu-toggle {
+        justify-self: end;
+        margin-right: 25px;
+        display: none;
+    }
+
+    .menu-toggle:hover {
+        cursor: pointer;
+    }
+
+    #mobile-menu.is-active .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    #mobile-menu.is-active .bar:nth-child(1) {
+        -webkit-transform: translateY(8px) rotate(45deg);
+        -ms-transform: translateY(8px) rotate(45deg);
+        -o-transform: translateY(8px) rotate(45deg);
+        transform: translateY(8px) rotate(45deg);
+    }
+
+    #mobile-menu.is-active .bar:nth-child(3) {
+        -webkit-transform: translateY(-8px) rotate(-45deg);
+        -ms-transform: translateY(-8px) rotate(-45deg);
+        -o-transform: translateY(-8px) rotate(-45deg);
+        transform: translateY(-8px) rotate(-45deg);
+    }
+
+    /* KEYFRAME ANIMATIONS */
+
+    @-webkit-keyframes gradbar {
+        0% {
+            background-position: 0% 50%
+        }
+
+        50% {
+            background-position: 100% 50%
+        }
+
+        100% {
+            background-position: 0% 50%
+        }
+    }
+
+    @-moz-keyframes gradbar {
+        0% {
+            background-position: 0% 50%
+        }
+
+        50% {
+            background-position: 100% 50%
+        }
+
+        100% {
+            background-position: 0% 50%
+        }
+    }
+
+    @keyframes gradbar {
+        0% {
+            background-position: 0% 50%
+        }
+
+        50% {
+            background-position: 100% 50%
+        }
+
+        100% {
+            background-position: 0% 50%
+        }
+    }
+
+    /* Media Queries */
+
+    /* Mobile Devices - Phones/Tablets */
+
+    @media only screen and (max-width: 720px) {
+        .features {
+            flex-direction: column;
+            padding: 50px;
+        }
+
+        /* MOBILE HEADINGS */
+
+        h1 {
+            font-size: 1.9rem;
+        }
+
+        h2 {
+            font-size: 1rem;
+        }
+
+        p {
+            font-size: 0.8rem;
+        }
+
+        /* MOBILE NAVIGATION */
+
+        .navbar ul {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            justify-content: start;
+            top: 55px;
+            background-color: #fff;
+            width: 100%;
+            height: calc(100vh - 55px);
+            transform: translate(-101%);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .navbar li {
+            padding: 15px;
+        }
+
+        .navbar li:first-child {
+            margin-top: 50px;
+        }
+
+        .navbar li a {
+            font-size: 1rem;
+        }
+
+        .menu-toggle,
+        .bar {
+            display: block;
+            cursor: pointer;
+        }
+
+        .mobile-nav {
+            transform: translate(0%) !important;
+        }
+
+        /* SECTIONS */
+
+        .headline {
+            height: 20vh;
+        }
+
+        .feature-container p {
+            margin-bottom: 25px;
+        }
+
+        .feature-container {
+            margin-top: 20px;
+        }
+
+        .feature-container:nth-child(2) {
+            order: -1;
+        }
+
+        /* SEARCH DISABLED ON MOBILE */
+
+        #search-icon {
+            display: none;
+        }
+
+        .search-input {
+            display: none;
+        }
+
+    }
+
+    /* The Modal (background) */
+    .modal {
+        display: block;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 1;
+        /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%;
+        /* Full width */
+        height: 100%;
+        /* Full height */
+        overflow: auto;
+        /* Enable scroll if needed */
+        background-color: rgb(0, 0, 0);
+        /* Fallback color */
+        background-color: rgba(0, 0, 0, 0.4);
+        /* Black w/ opacity */
+    }
+
+    /* Modal Content/Box */
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        /* Could be more or less, depending on screen size */
+    }
+
+    /* The Close Button */
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
+<script type="text/javascript">
+    // Get the <span> element that closes the modal
+    // var span = document.getElementsByClassName("close")[0];
+    // var span = document.getElementByClass("close");
+    var modal = document.getElementById("myModal")
+    var span1 = document.getElementById("modal_close");
+    console.log(span1);
+
+    // When the user clicks on <span> (x), close the modal
+    span1.onclick = function () {
+        console.log("hii");
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+
+</html>

@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS user_database_list
     database_name VARCHAR(100),
     PRIMARY KEY (username, database_name)
 );
+
+INSERT INTO user_database_list VALUES ('admin', 'ADDRSo', 'swlabbas0@gmail.com', 'database');
