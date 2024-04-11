@@ -8,3 +8,4 @@ CREATE TABLE IF NOT EXISTS user_database_list
 );
 
 INSERT INTO table2 VALUES ('ss', '../static/multimedia/abir_newdb/Screnshot_1.png');
+INSERT INTO table1img VALUES ('ss2', '../static/multimedia/abir_newdb/Screenshot_2.png');

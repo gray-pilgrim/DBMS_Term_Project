@@ -17,9 +17,10 @@
         <tbody>
             {% for row in table_info %}
             <tr>
+                {% set out_l_i = loop.index %}
                 {% for entry in row %}
                     {% if column_info[loop.index - 1][1] == 1 %}
-                    <td><a href="/{{entry}}">img</a></td>
+                    <td><a href="/{{entry}}">{{mul_info[out_l_i-1][loop.index-1]}}</a></td>
                     {% else %}
                     <td>{{entry}}</td>
                     {% endif %}

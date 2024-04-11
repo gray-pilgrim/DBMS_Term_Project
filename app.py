@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, redirect, session
 from flask_bcrypt import Bcrypt
+import os
 
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
@@ -70,6 +71,7 @@ def otp_verification():
         runQuery(query=query)
 
         runQuery(query=f"CREATE DATABASE {glb_info['username']}_{glb_info['database']};")
+        os.mkdir(f"../static/multimedia/{glb_info['username']}_{glb_info['database']}")
         return redirect('/')
 
     return render_template('otp_verification.html')
@@ -208,14 +210,21 @@ def table():
                             ''', session['dbname'])
         column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{table}';''', session['dbname'])
         column_info = []
-        for column in column_names:
+        mul_info = []
+
+        for c in table_info:
+            mul_info.append(list(c))
+
+        for i, column in enumerate(column_names):
             cn = column[0]
             if(cn.split('__')[-1] == 'mul'):
                 column_info.append([cn.split('__')[0], 1])
+                for j in range(len(table_info)):
+                    print(table_info[j][i].split('/'))
+                    mul_info[j][i] = table_info[j][i].split('/')[-1]
             else:
                 column_info.append([cn, 0])
-        print(column_info)
-        return render_template('table.html', column_info=column_info, table_info = table_info)
+        return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
 
 @app.route('/logout')
 def logout():
