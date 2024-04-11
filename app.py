@@ -8,6 +8,7 @@ from modules.models import User
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 app.secret_key = 'secret_key'
+databases = ''
 
 global glb_info, glb_otp
 glb_info,glb_otp = None,None
@@ -87,12 +88,12 @@ def login():
             for valus in item:
                 print(valus)
         
-        if (user_database == []):
+        if (userinfo == []):
             return render_template('login.html', error='Invalid combination of username and database')
         
         
-        if user_database and bcrypt.check_password_hash(user_database[0][1],password):
-            session['database'] = user_database[0][0]
+        if userinfo and bcrypt.check_password_hash(userinfo[0][1],password):
+            session['database'] = userinfo[0][0]
             return redirect('/dashboard')
         else:
             return render_template('login.html', error='Wrong password')
@@ -167,23 +168,25 @@ def kgp_student():
 
 @app.route('/view_database', methods = ['GET','POST'])
 def add_table():    
+    global databases
     if session.get('username'):
         if request.method == 'POST':
-            database_id = request.form.get('did')  # Retrieve 'eid' from the form data
+            database_id = request.form.get('eid')  # Retrieve 'eid' from the form data
             if database_id is None:
                 # Handle the case when 'eid' is not found in the form data
                 return "Error: 'eid' parameter not found in the form data"
         
             print(database_id)
             print("Mera database id")
+            # database_name = session['username']+database_id
             user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
             user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
             list_databases = []
-            print(user_databases)
-            i = 0
-            for item in user_databases:
-                print(item)
-                list_databases.append(item[0])
+            # print(user_databases)
+            # i = 0
+            # for item in user_databases:
+            #     print(item)
+            #     list_databases.append(item[0])
             Current_User = User(user_info)
             # additional_info = runQuery(query = f'''
             #                                     SELECT roll_no, institute_email
@@ -228,6 +231,70 @@ def add_table():
     return redirect('/login')
 
 
+
+
+@app.route('/view_database/create_table', methods = ['GET','POST'])
+def create_table():    
+    if session.get('username'):
+        if request.method == 'POST':
+            database_id = request.form.get('eid')  # Retrieve 'eid' from the form data
+            if database_id is None:
+                # Handle the case when 'eid' is not found in the form data
+                return "Error: 'eid' parameter not found in the form data"
+        
+            print(database_id)
+            # print("Mera database id")
+            # # database_name = session['username']+database_id
+            # user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
+            user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'",database_id)[0]
+            # list_databases = []
+            # print(user_databases)
+            # i = 0
+            # for item in user_databases:
+            #     print(item)
+            #     list_databases.append(item[0])
+            Current_User = User(user_info)
+            # additional_info = runQuery(query = f'''
+            #                                     SELECT roll_no, institute_email
+            #                                     FROM kgp_student
+            #                                     JOIN all_users ON kgp_student.username = all_users.username
+            #                                     WHERE kgp_student.username = '{username}'
+            #                                     ''')[0]
+            
+
+            # # print(additional_info)
+            # Current_User = Kgp_Student(user_info, additional_info)
+
+            # list_events = runQuery(query=f"SELECT * FROM events") # list of events
+
+            # vol_apply_list1 = runQuery(query=f"SELECT event_id FROM volunteers WHERE username='{session['username']}' AND type=1") # list of applied for vol events
+            # vol_apply_list = []
+            # if vol_apply_list1 is not None:
+            #     for item in vol_apply_list1:
+            #         vol_apply_list.append(item[0])
+
+            # vol_approve_list1 = runQuery(query=f"SELECT event_id FROM volunteers WHERE username='{session['username']}' AND type=2") # list of approved for vol events
+            # vol_approve_list = []
+            # if vol_approve_list1 is not None:
+            #     for item in vol_approve_list1:
+            #         vol_approve_list.append(item[0])
+
+            # partici_list1 = runQuery(query=f"SELECT part_event_id FROM participate WHERE part_user='{session['username']}'") # list of approved for vol events
+            # partici_list = []
+            # if partici_list1 is not None:
+            #     for item in partici_list1:
+            #         partici_list.append(item[0])
+            
+            # disapp = runQuery(query=f"SELECT event_id FROM volunteers WHERE username='{session['username']}' AND type=3") # list of approved for vol eventss
+            # disapproved = []
+            # if disapp is not None:
+            #     for item in disapp:
+            #         disapproved.append(item[0])
+
+            return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id)
+        return render_template('/dashboard')
+    
+    return redirect('/login')
 
 
 @app.route('/logout')
