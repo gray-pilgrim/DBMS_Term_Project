@@ -175,7 +175,7 @@ def add_table():
             if database_id is None:
                 # Handle the case when 'eid' is not found in the form data
                 return "Error: 'eid' parameter not found in the form data"
-        
+            session['dbname'] = database_id
             print(database_id)
             print("Mera database id")
             # database_name = session['username']+database_id
@@ -233,68 +233,40 @@ def add_table():
 
 
 
-@app.route('/view_database/create_table', methods = ['GET','POST'])
-def create_table():    
+from flask import request
+
+@app.route('/view_database/create_table', methods=['GET', 'POST'])
+def create_table():
     if session.get('username'):
-        if request.method == 'POST':
-            database_id = request.form.get('eid')  # Retrieve 'eid' from the form data
-            if database_id is None:
-                # Handle the case when 'eid' is not found in the form data
-                return "Error: 'eid' parameter not found in the form data"
-        
-            print(database_id)
-            # print("Mera database id")
-            # # database_name = session['username']+database_id
-            # user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
-            user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'",database_id)[0]
-            # list_databases = []
-            # print(user_databases)
-            # i = 0
-            # for item in user_databases:
-            #     print(item)
-            #     list_databases.append(item[0])
-            Current_User = User(user_info)
-            # additional_info = runQuery(query = f'''
-            #                                     SELECT roll_no, institute_email
-            #                                     FROM kgp_student
-            #                                     JOIN all_users ON kgp_student.username = all_users.username
-            #                                     WHERE kgp_student.username = '{username}'
-            #                                     ''')[0]
-            
+        if session.get('dbname'):
+            if request.method == 'POST':
+                table_name = request.form.get('eid')  # Retrieve 'eid' from the form data
+                num_attributes = int(request.form.get('num_attributes'))  # Retrieve number of attributes
+                if not table_name:
+                    return "Error: 'eid' parameter not found in the form data"
+                type = {"text":"VARCHAR(1024)", "time" : "time", "date": "date", "image" : ""}
+                # Construct the SQL query to create the table
+                columns = []
+                for i in range(1, num_attributes + 1):
+                    attribute_name = request.form.get('attribute' + str(i))  # Get attribute name
+                    attribute_type = request.form.get('attribute_type_' + str(i))  # Get attribute type
+                    columns.append(f"{attribute_name} {attribute_type}")
 
-            # # print(additional_info)
-            # Current_User = Kgp_Student(user_info, additional_info)
+                # Join the columns into a comma-separated string
+                columns_str = ', '.join(columns)
 
-            # list_events = runQuery(query=f"SELECT * FROM events") # list of events
+                # Construct the CREATE TABLE query
+                create_table_query = f"CREATE TABLE {table_name} ({columns_str});"
 
-            # vol_apply_list1 = runQuery(query=f"SELECT event_id FROM volunteers WHERE username='{session['username']}' AND type=1") # list of applied for vol events
-            # vol_apply_list = []
-            # if vol_apply_list1 is not None:
-            #     for item in vol_apply_list1:
-            #         vol_apply_list.append(item[0])
+                # Run the query using runQuery function
+                result = runQuery(query=create_table_query, dbname=session['dbname'])
 
-            # vol_approve_list1 = runQuery(query=f"SELECT event_id FROM volunteers WHERE username='{session['username']}' AND type=2") # list of approved for vol events
-            # vol_approve_list = []
-            # if vol_approve_list1 is not None:
-            #     for item in vol_approve_list1:
-            #         vol_approve_list.append(item[0])
+                # Return the result or render a template with the result
+                return "Table created successfully" if result else "Error creating table"
 
-            # partici_list1 = runQuery(query=f"SELECT part_event_id FROM participate WHERE part_user='{session['username']}'") # list of approved for vol events
-            # partici_list = []
-            # if partici_list1 is not None:
-            #     for item in partici_list1:
-            #         partici_list.append(item[0])
-            
-            # disapp = runQuery(query=f"SELECT event_id FROM volunteers WHERE username='{session['username']}' AND type=3") # list of approved for vol eventss
-            # disapproved = []
-            # if disapp is not None:
-            #     for item in disapp:
-            #         disapproved.append(item[0])
-
-            return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id)
-        return render_template('/dashboard')
-    
+        return redirect('/dashboard')
     return redirect('/login')
+
 
 
 @app.route('/logout')
