@@ -25,6 +25,12 @@
 
 <div id="search_">
     {% if user %}
+
+    {% for i in table_list %}
+    <div class="square">{{i[0]}}
+    </div>
+    {% endfor %}
+
     <form action="/view_database/create_table" method="POST">
                     
         <div class="form-group">
