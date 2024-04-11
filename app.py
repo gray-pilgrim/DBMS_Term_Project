@@ -152,6 +152,8 @@ def create_table():
             if request.method == 'POST':
                 table_name = request.form.get('table_name')  # Retrieve 'eid' from the form data
                 num_attributes = int(request.form.get('num_attributes'))  # Retrieve number of attributes
+                user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
+                Current_User = User(user_info)
                 if not table_name:
                     return "Error: 'eid' parameter not found in the form data"
                 type = {"text":"VARCHAR(1024)", "time" : "time", "date": "date", "image" : ""}
@@ -172,9 +174,16 @@ def create_table():
                 print(create_table_query)
                 # Run the query using runQuery function
                 runQuery(query=create_table_query, dbname=session['dbname'])
+                print(runQuery(query="SELECT table_name\
+                FROM information_schema.tables\
+                WHERE table_schema='public'\
+                AND table_type='BASE TABLE';\
+                ", dbname=session['dbname']))
 
+                return render_template('view_database.html', user = Current_User, database_name = session['dbname'], )
                 # Return the result or render a template with the result
                 # return "Table created successfully" if result else "Error creating table"
+
 
         return redirect('/dashboard')
 
