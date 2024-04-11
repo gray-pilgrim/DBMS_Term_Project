@@ -51,6 +51,9 @@
             <input type="file" id="file" name="file" />
             <button type="submit" class="btn btn-dark">Submit</button>
         </form>
+        <img src="../static/Logo.png" alt="img not found">
+        <!-- <img src="../images1/Q3.jpg" alt="img not found"> -->
+        <img src="{{ url_for('images1', filename='Q3.jpg') }}" alt="Image">
     </div>
 </body>
 
