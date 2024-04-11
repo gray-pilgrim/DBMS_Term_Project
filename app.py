@@ -1,11 +1,18 @@
 from flask import Flask, request, render_template, redirect, session
 from flask_bcrypt import Bcrypt
 from runquery import runQuery
+from werkzeug.utils import secure_filename
+import os
 
 from modules.mailsend import OTP_send
 from models import User
 
 app = Flask(__name__)
+UPLOAD_FOLDER = 'images1'
+if not os.path.exists(UPLOAD_FOLDER):
+    print("no path")
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 bcrypt = Bcrypt(app)
 app.secret_key = 'secret_key'
 
@@ -208,5 +215,25 @@ def logout():
     return redirect('/login')
 
 
+# D:\SEM6_Dbms_Lab
+@app.route('/upload_files', methods=['POST'])
+def upload_file():
+    print(request.files)
+    if 'file' not in request.files:
+        return 'No file part'
+    
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file'
+    print(file.filename)
+
+    filename = secure_filename(file.filename)
+    
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+    
+    return 'File uploaded successfully'
+
+    
+    
 if __name__ == '__main__':
     app.run(debug=True)
