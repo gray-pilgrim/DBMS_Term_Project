@@ -126,6 +126,7 @@ def add_table():
     if session.get('username'):
         if request.method == 'POST':
             database_id = request.form.get('db')  # Retrieve 'db' from the form data
+            print(database_id)
             if database_id is None:
                 # Handle the case when 'db' is not found in the form data
                 return "Error: 'db' parameter not found in the form data"
@@ -138,8 +139,18 @@ def add_table():
             list_databases = []
             
             Current_User = User(user_info)
+            print(runQuery(query="SELECT table_name\
+            FROM information_schema.tables\
+            WHERE table_schema='public'\
+            AND table_type='BASE TABLE';\
+            ", dbname=session['dbname']))
+            table_list = runQuery(query="SELECT table_name\
+            FROM information_schema.tables\
+            WHERE table_schema='public'\
+            AND table_type='BASE TABLE';\
+            ", dbname=session['dbname'])
 
-            return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id)
+            return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id, table_list = table_list)
     
     return redirect('/login')
 
@@ -179,8 +190,12 @@ def create_table():
                 WHERE table_schema='public'\
                 AND table_type='BASE TABLE';\
                 ", dbname=session['dbname']))
-
-                return render_template('view_database.html', user = Current_User, database_name = session['dbname'], )
+                table_list = runQuery(query="SELECT table_name\
+                FROM information_schema.tables\
+                WHERE table_schema='public'\
+                AND table_type='BASE TABLE';\
+                ", dbname=session['dbname'])
+                return render_template('view_database.html', user = Current_User, database_name = session['dbname'], table_list = table_list)
                 # Return the result or render a template with the result
                 # return "Table created successfully" if result else "Error creating table"
 
