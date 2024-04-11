@@ -138,7 +138,7 @@ def add_table():
             list_databases = []
             
             Current_User = User(user_info)
-
+            # img = "../static/multimedia/abir_newdb/s1.png"
             return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id)
     
     return redirect('/login')
@@ -154,7 +154,7 @@ def create_table():
                 num_attributes = int(request.form.get('num_attributes'))  # Retrieve number of attributes
                 if not table_name:
                     return "Error: 'eid' parameter not found in the form data"
-                type = {"text":"VARCHAR(1024)", "time" : "time", "date": "date", "image" : ""}
+                type = {"text":"VARCHAR(1024)", "time" : "TIME", "date": "DATE", "image" : "VARCHAR(1024)", "integer" : "INT"}
                 # Construct the SQL query to create the table
                 columns = []
                 for i in range(1, num_attributes + 1):
@@ -184,7 +184,8 @@ def create_table():
 
 @app.route('/logout')
 def logout():
-    session.pop('username_database', None)
+    session.pop('username', None)
+    session.pop('database', None)
     return redirect('/login')
 
 

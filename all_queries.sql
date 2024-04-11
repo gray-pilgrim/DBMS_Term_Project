@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS user_database_list
     database_name VARCHAR(100),
     PRIMARY KEY (username, database_name)
 );
+
+INSERT INTO table2 VALUES ('ss', './multimedia/abir_newdb/Screnshot_1.png');
