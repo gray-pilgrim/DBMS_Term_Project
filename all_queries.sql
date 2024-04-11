@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS user_database_list
     PRIMARY KEY (username, database_name)
 );
 
-INSERT INTO table2 VALUES ('ss', './multimedia/abir_newdb/Screnshot_1.png');
+INSERT INTO table2 VALUES ('ss', '../static/multimedia/abir_newdb/Screnshot_1.png');

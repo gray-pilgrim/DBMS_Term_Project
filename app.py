@@ -74,7 +74,6 @@ def otp_verification():
 
     return render_template('otp_verification.html')
 
-
 @app.route('/login', methods=['GET','POST'])
 def login():
     # When submitting login form
@@ -101,7 +100,6 @@ def login():
         
     return render_template('login.html')
     
-
 @app.route('/dashboard')
 def dashboard():
     if session.get('username'):
@@ -154,8 +152,6 @@ def view_database():
     
     return redirect('/login')
 
-
-
 @app.route('/view_database/create_table', methods=['GET', 'POST'])
 def create_table():
     if session.get('username'):
@@ -175,7 +171,10 @@ def create_table():
                     attribute_name = request.form.get('attribute' + str(i))  # Get attribute name
                     print(request.form.get('attribute_type_' + str(i)))
                     attribute_type = type[request.form.get('attribute_type_' + str(i))]  # Get attribute type
-                    columns.append(f" {attribute_name} {attribute_type} ")
+                    if(request.form.get('attribute_type_' + str(i)) == "image" or request.form.get('attribute_type_' + str(i)) == "video" or request.form.get('attribute_type_' + str(i)) == "audio"):
+                        columns.append(f" {attribute_name}__mul {attribute_type} ")
+                    else:
+                        columns.append(f" {attribute_name} {attribute_type} ")
 
                 # Join the columns into a comma-separated string
                 columns_str = ', '.join(columns)
@@ -185,24 +184,38 @@ def create_table():
                 print(create_table_query)
                 # Run the query using runQuery function
                 runQuery(query=create_table_query, dbname=session['dbname'])
-                print(runQuery(query="SELECT table_name\
-                FROM information_schema.tables\
-                WHERE table_schema='public'\
-                AND table_type='BASE TABLE';\
-                ", dbname=session['dbname']))
+                
                 table_list = runQuery(query="SELECT table_name\
                 FROM information_schema.tables\
                 WHERE table_schema='public'\
                 AND table_type='BASE TABLE';\
                 ", dbname=session['dbname'])
-                return render_template('view_database.html', user = Current_User, database_name = session['dbname'], table_list = table_list)
+
+                return render_template('view_database.html', user = Current_User, database = session['dbname'], table_list = table_list)
                 # Return the result or render a template with the result
                 # return "Table created successfully" if result else "Error creating table"
-
 
         return redirect('/dashboard')
 
     return redirect('/login')
+
+@app.route('/view_database/table', methods=['POST'])
+def table():
+    if(request.method == 'POST'):
+        table = request.form['table_name']
+        table_info = runQuery(f'''
+                                SELECT * FROM {table}
+                            ''', session['dbname'])
+        column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{table}';''', session['dbname'])
+        column_info = []
+        for column in column_names:
+            cn = column[0]
+            if(cn.split('__')[-1] == 'mul'):
+                column_info.append([cn.split('__')[0], 1])
+            else:
+                column_info.append([cn, 0])
+        print(column_info)
+        return render_template('table.html', column_info=column_info, table_info = table_info)
 
 @app.route('/logout')
 def logout():
