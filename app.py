@@ -3,6 +3,7 @@ from flask_bcrypt import Bcrypt
 from runquery import runQuery
 from werkzeug.utils import secure_filename
 import os
+from PIL import Image
 
 from modules.mailsend import OTP_send
 from models import User
@@ -231,6 +232,7 @@ def upload_file():
     
     file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
     
+    file_path = 'images1/' + filename 
     return 'File uploaded successfully'
 
     
