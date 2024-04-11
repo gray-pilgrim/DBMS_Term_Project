@@ -1,9 +1,9 @@
 from flask import Flask, request, render_template, redirect, session
 from flask_bcrypt import Bcrypt
-from runquery import runQuery
 
 from modules.mailsend import OTP_send
-from models import User
+from modules.runquery import runQuery
+from modules.models import User
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -11,17 +11,6 @@ app.secret_key = 'secret_key'
 
 global glb_info, glb_otp
 glb_info,glb_otp = None,None
-
-
-def check_to_all_users(username, database):
-    query = f"SELECT * FROM user_database_list WHERE username = '{username}' AND database_name = '{database}';"
-    user = runQuery(query=query)
-
-    if(user != []):
-        return 'err'
-
-    return 'ok'
-
 
 @app.route('/')
 def index():
@@ -38,6 +27,16 @@ def register():
         email = request.form['email']
         database = request.form['database']
 
+        query = f"SELECT * FROM user_database_list WHERE username = '{username}' AND database_name = '{database}';"
+        user_database = runQuery(query=query)
+
+        if(user_database != []):
+            return render_template('create_database.html', error = "username-database combination already exists")
+        
+        if(not username.isalnum() or not database.isalnum() or not username[0].isalpha()):
+            return render_template('create_database.html', error = "only use alpha-numeric in username (first must be character) and database name")
+
+
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         glb_info = {
@@ -46,16 +45,34 @@ def register():
             'email' : email,
             'database' : database
         }
-        val = check_to_all_users(username, database)
-        if val == 'err':
-            return render_template('create_database.html', error='Username and database name pair already exists')
-        
-        runQuery(query = f"INSERT INTO user_database_list VALUES ('{glb_info['username']}','{glb_info['hashed_password']}','{glb_info['email']}','{glb_info['database']}');")
-        runQuery(query = f"CREATE DATABASE {glb_info['database']}")
+
         print(glb_info)
-        return redirect('/')
+        glb_otp = OTP_send(email=email, random=True)
+        return redirect('/create_database/otp')
+    
 
     return render_template('create_database.html')
+
+@app.route('/create_database/otp', methods=['GET','POST'])
+def otp_verification():
+    if(request.method == 'POST'):
+        otp_form = request.form['otp']
+
+        if(not glb_otp or glb_otp != int(otp_form)):
+            return render_template('create_database.html', error = "OTP not matched")
+        
+        query = f'''INSERT INTO user_database_list VALUES ('{glb_info['username']}', 
+                                                            '{glb_info['hashed_password']}', 
+                                                            '{glb_info['email']}', 
+                                                            '{glb_info['database']}'
+                                                            );'''
+        runQuery(query=query)
+
+        runQuery(query=f"CREATE DATABASE {glb_info['username']}_{glb_info['database']};")
+        return redirect('/')
+
+    return render_template('otp_verification.html')
+
 
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -70,16 +87,25 @@ def login():
             for valus in item:
                 print(valus)
         
-        if userinfo == []:
-            return render_template('login.html', error = 'Username does not exist')
-        if userinfo and bcrypt.check_password_hash(userinfo[0][1],password):
-            session['username'] = userinfo[0][0]
+        if (user_database == []):
+            return render_template('login.html', error='Invalid combination of username and database')
+        
+        
+        if user_database and bcrypt.check_password_hash(user_database[0][1],password):
+            session['database'] = user_database[0][0]
             return redirect('/dashboard')
-        else :
-            return render_template('login.html', error = 'Password does not match')
-        if session.get('username'):
-            print('User logged in')
-            return redirect('/dashboard')
+        else:
+            return render_template('login.html', error='Wrong password')
+        # if userinfo == []:
+        #     return render_template('login.html', error = 'Username does not exist')
+        # if userinfo and bcrypt.check_password_hash(userinfo[0][1],password):
+        #     session['username'] = userinfo[0][0]
+        #     return redirect('/dashboard')
+        # else :
+        #     return render_template('login.html', error = 'Password does not match')
+        # if session.get('username'):
+        #     print('User logged in')
+        #     return redirect('/dashboard')
     return render_template('login.html')
     
 
@@ -137,7 +163,6 @@ def kgp_student():
         
     
     return redirect('/login')
-
 
 
 @app.route('/view_database', methods = ['GET','POST'])
@@ -202,10 +227,15 @@ def add_table():
     
     return redirect('/login')
 
+
+
+
 @app.route('/logout')
 def logout():
-    session.pop('username', None)
+    session.pop('username_database', None)
     return redirect('/login')
+
+
 
 
 if __name__ == '__main__':
