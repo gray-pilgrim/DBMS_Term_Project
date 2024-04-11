@@ -39,7 +39,7 @@ def connect(config,dbname):
     cur = conn.cursor()
     return cur, conn
 
-def runQuery(query,dbname = 'dbmsterm'):
+def runQuery(query,dbname='admin_database'):
     config = load_config('database.ini', 'postgresql')
     cursor, conn = connect(config,dbname)
 
