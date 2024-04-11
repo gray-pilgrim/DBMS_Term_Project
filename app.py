@@ -121,7 +121,7 @@ def dashboard():
     return redirect('/login')
 
 @app.route('/view_database', methods = ['GET','POST'])
-def add_table():    
+def view_database():    
     # global databases
     if session.get('username'):
         if request.method == 'POST':
@@ -173,12 +173,6 @@ def create_table():
                 create_table_query = f"CREATE TABLE {table_name} ({columns_str});"
                 print(create_table_query)
                 # Run the query using runQuery function
-                runQuery(query=create_table_query, dbname=session['dbname'])
-                print(runQuery(query="SELECT table_name\
-                FROM information_schema.tables\
-                WHERE table_schema='public'\
-                AND table_type='BASE TABLE';\
-                ", dbname=session['dbname']))
 
                 return render_template('view_database.html', user = Current_User, database_name = session['dbname'], )
                 # Return the result or render a template with the result
@@ -188,8 +182,6 @@ def create_table():
         return redirect('/dashboard')
 
     return redirect('/login')
-
-
 
 @app.route('/logout')
 def logout():
