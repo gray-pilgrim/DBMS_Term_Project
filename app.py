@@ -123,35 +123,36 @@ def dashboard():
 @app.route('/view_database', methods = ['GET','POST'])
 def view_database():    
     # global databases
-    if session.get('username'):
-        if request.method == 'POST':
-            database_id = request.form.get('db')  # Retrieve 'db' from the form data
-            print(database_id)
-            if database_id is None:
-                # Handle the case when 'db' is not found in the form data
-                return "Error: 'db' parameter not found in the form data"
-            session['dbname'] = session['username'] + "_" + database_id
-            print(database_id)
-            print("Mera database id")
-            # database_name = session['username']+database_id
-            user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
-            user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
-            list_databases = []
-            
-            Current_User = User(user_info)
-            print(runQuery(query="SELECT table_name\
-            FROM information_schema.tables\
-            WHERE table_schema='public'\
-            AND table_type='BASE TABLE';\
-            ", dbname=session['dbname']))
-            table_list = runQuery(query="SELECT table_name\
-            FROM information_schema.tables\
-            WHERE table_schema='public'\
-            AND table_type='BASE TABLE';\
-            ", dbname=session['dbname'])
+    if request.method == 'POST':
+        if session.get('username'):
+            if session.get('dbname'):
+                database_id = request.form.get('db')  # Retrieve 'db' from the form data
+                print(database_id)
+                if database_id is None:
+                    # Handle the case when 'db' is not found in the form data
+                    return "Error: 'db' parameter not found in the form data"
+                session['dbname'] = session['username'] + "_" + database_id
+                print(database_id)
+                print("Mera database id")
+                # database_name = session['username']+database_id
+                user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
+                user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
+                list_databases = []
+                
+                Current_User = User(user_info)
+                print(runQuery(query="SELECT table_name\
+                FROM information_schema.tables\
+                WHERE table_schema='public'\
+                AND table_type='BASE TABLE';\
+                ", dbname=session['dbname']))
+                table_list = runQuery(query="SELECT table_name\
+                FROM information_schema.tables\
+                WHERE table_schema='public'\
+                AND table_type='BASE TABLE';\
+                ", dbname=session['dbname'])
 
-            return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id, table_list = table_list)
-    
+                return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id, table_list = table_list)
+            return render_template('user_dashboard.html', databases = list_databases, user = Current_User)
     return redirect('/login')
 
 @app.route('/view_database/create_table', methods=['GET', 'POST'])
@@ -204,27 +205,29 @@ def create_table():
 @app.route('/view_database/table', methods=['POST'])
 def table():
     if(request.method == 'POST'):
-        table = request.form['table_name']
-        table_info = runQuery(f'''
-                                SELECT * FROM {table}
-                            ''', session['dbname'])
-        column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{table}';''', session['dbname'])
-        column_info = []
-        mul_info = []
+        if session.get('username') and session.get('dbname'):
+            table = request.form['table_name']
+            table_info = runQuery(f'''
+                                    SELECT * FROM {table}
+                                ''', session['dbname'])
+            column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{table}';''', session['dbname'])
+            column_info = []
+            mul_info = []
 
-        for c in table_info:
-            mul_info.append(list(c))
+            for c in table_info:
+                mul_info.append(list(c))
 
-        for i, column in enumerate(column_names):
-            cn = column[0]
-            if(cn.split('__')[-1] == 'mul'):
-                column_info.append([cn.split('__')[0], 1])
-                for j in range(len(table_info)):
-                    print(table_info[j][i].split('/'))
-                    mul_info[j][i] = table_info[j][i].split('/')[-1]
-            else:
-                column_info.append([cn, 0])
-        return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+            for i, column in enumerate(column_names):
+                cn = column[0]
+                if(cn.split('__')[-1] == 'mul'):
+                    column_info.append([cn.split('__')[0], 1])
+                    for j in range(len(table_info)):
+                        print(table_info[j][i].split('/'))
+                        mul_info[j][i] = table_info[j][i].split('/')[-1]
+                else:
+                    column_info.append([cn, 0])
+            return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+        return 
 
 @app.route('/logout')
 def logout():
