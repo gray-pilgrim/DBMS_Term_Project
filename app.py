@@ -1,6 +1,8 @@
 from flask import Flask, request, render_template, redirect, session
 from flask_bcrypt import Bcrypt
+from werkzeug.utils import secure_filename
 import os
+from PIL import Image
 
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
@@ -8,6 +10,11 @@ from modules.models import User
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
+UPLOAD_FOLDER = f'images1'
+if not os.path.exists(UPLOAD_FOLDER):
+    print("no path")
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'secret_key'
 databases = ''
 
@@ -171,7 +178,7 @@ def create_table():
                 Current_User = User(user_info)
                 if not table_name:
                     return "Error: 'eid' parameter not found in the form data"
-                type = {"text":"VARCHAR(1024)", "time" : "TIME", "date": "DATE", "image" : "VARCHAR(1024)", "integer" : "INT"}
+                type = {"text":"VARCHAR(1024)", "time" : "TIME", "date": "DATE", "image" : "VARCHAR(1024)", "integer" : "INT",  "image" : "VARCHAR(1024)", "audio" : "VARCHAR(1024)", "double" : "DOUBLE(11, 6)"}
                 # Construct the SQL query to create the table
                 columns = []
                 for i in range(1, num_attributes + 1):
@@ -224,7 +231,6 @@ def table():
     column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{session['table']}';''', session['dbname'])
     column_info = []
     mul_info = []
-
     for c in table_info:
         mul_info.append(list(c))
 
@@ -238,6 +244,102 @@ def table():
         else:
             column_info.append([cn, 0])
     return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+
+
+@app.route('/view_database/add_row1', methods=['GET', 'POST'])
+def add_row1():
+    print("add rowwwwwwwwwwwwwwwwwwwwwwwwwwwww")
+    global UPLOAD_FOLDER
+    # global UPLOAD_FOLDER
+    if request.method == 'POST' :
+        print(session['table'])
+        print(session['dbname'])
+        UPLOAD_FOLDER = f'static/multimedia/' + session['dbname']
+        if not os.path.exists(UPLOAD_FOLDER):
+            print("no pathhhhhhhhhhhhhhhhhhhhhhhh")
+            os.makedirs(UPLOAD_FOLDER)
+        app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+        
+        table_info = runQuery(f'''
+                                SELECT * FROM {session['table']}
+                            ''', session['dbname'])
+        column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{session['table']}';''', session['dbname'])
+        column_info = []
+        mul_info = []
+
+        insert_info = []
+        insert_string = ""
+        for i, column in enumerate(column_names):
+            # print("Joan of Arc")
+            field_value = request.form.get('text_field_'+str(i))
+            if field_value is not None:
+                insert_info.append(field_value)
+                insert_string += "\"" + field_value + "\""
+            if i != len(column_names) - 1:
+                insert_string += ","
+        # print(insert_string)
+        for c in table_info:
+            mul_info.append(list(c))
+
+        for i, column in enumerate(column_names):
+            cn = column[0]
+            if(cn.split('__')[-1] == 'mul'):
+                column_info.append([cn.split('__')[0], 1])
+                for j in range(len(table_info)):
+                    print(table_info[j][i].split('/'))
+                    mul_info[j][i] = table_info[j][i].split('/')[-1]
+            else:
+                column_info.append([cn, 0])
+
+        l1 = len(column_info)
+
+        insert_vals = []
+
+        for i in column_info:
+            if(i[1]==1):
+                
+                r1 = i[0]
+
+                file = request.files[i[0]]
+                if file.filename == '':
+                    return 'No selected file'
+                print(file.filename)
+
+                file_path1 =  f"'../static/multimedia/{session['dbname']}/{file.filename}'"
+                insert_vals.append(file_path1)
+
+                filename = secure_filename(file.filename)
+                
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+            else :
+                value1 = f"'{request.form.get(i[0])}'"
+                # value1 = request.form.get
+                insert_vals.append(value1)
+
+        print("fnioienfowinwngowngiowengikwengokjwnegfvjowengvol")
+        insert_vals_str = ','.join(insert_vals)
+        print(insert_vals_str)
+        strr = f"INSERT INTO {session['table']} VALUES ({insert_vals_str})"
+        runQuery(strr,session['dbname'])
+        return "doneeeeeeeeeee"
+
+        
+
+
+# @app.route('/view_database/add_row', methods=['GET', 'POST'])
+# def add_row():
+    
+#     for i in range(len(column_names)):
+#         if column_info[i][1] == 1:
+#             file = request.files.get('text_field_' + str(i + 1))  # Adjusted index to start from 1
+#             if file:
+#                 if file.filename == '':
+#                     return render_template('table.html', column_info=column_info, table_info=table_info, mul_info=mul_info)
+#                 print("Karo jodi bhutey dhorey")
+#                 filename = secure_filename(file.filename)
+#                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+#                 file_path = 'images1/' + filename 
+#     return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
 
 
 @app.route('/logout')
