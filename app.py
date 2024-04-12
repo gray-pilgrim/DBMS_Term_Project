@@ -1,15 +1,27 @@
 from flask import Flask, request, render_template, redirect, session
 from flask_bcrypt import Bcrypt
 import os
+from werkzeug.utils import secure_filename
+
 
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
+from modules.dl import load_model, compute_image_similarity
+from modules.kdtree import most_similar
+
+model_i2i = load_model()
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 app.secret_key = 'secret_key'
 databases = ''
+
+UPLOAD_FOLDER = './multimedia'
+if not os.path.exists(UPLOAD_FOLDER):
+    print("no path")
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 global glb_info, glb_otp
 glb_info,glb_otp = None,None
@@ -137,28 +149,34 @@ def view_database():
                 #     return "Error: 'db' parameter not found in the form data"
                 session['dbname'] = session['username'] + "_" + database_id
                 print(database_id)
+                return redirect('/database_page')
             # print("Mera database id")
             # database_name = session['username']+database_id
             # user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
-            user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
-            list_databases = []
-            
-            Current_User = User(user_info)
-            print(runQuery(query="SELECT table_name\
-            FROM information_schema.tables\
-            WHERE table_schema='public'\
-            AND table_type='BASE TABLE';\
-            ", dbname=session['dbname']))
-            table_list = runQuery(query="SELECT table_name\
-            FROM information_schema.tables\
-            WHERE table_schema='public'\
-            AND table_type='BASE TABLE';\
-            ", dbname=session['dbname'])
-
-            return render_template('view_database.html', databases = list_databases, user = 
-                                   Current_User, database = database_id, table_list = table_list)
         return redirect('/dashboard')
-    return redirect('/login')
+    return redirect('/login')\
+    
+@app.route('/database_page')
+def database():
+
+    database_id = session['dbname'].split("_")[-1]
+    user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
+    list_databases = []
+    
+    Current_User = User(user_info)
+    print(runQuery(query="SELECT table_name\
+    FROM information_schema.tables\
+    WHERE table_schema='public'\
+    AND table_type='BASE TABLE';\
+    ", dbname=session['dbname']))
+    table_list = runQuery(query="SELECT table_name\
+    FROM information_schema.tables\
+    WHERE table_schema='public'\
+    AND table_type='BASE TABLE';\
+    ", dbname=session['dbname'])
+
+    return render_template('view_database.html', databases = list_databases, user = 
+                            Current_User, database = database_id, table_list = table_list)
 
 @app.route('/view_database/create_table', methods=['GET', 'POST'])
 def create_table():
@@ -237,8 +255,105 @@ def table():
                 mul_info[j][i] = table_info[j][i].split('/')[-1]
         else:
             column_info.append([cn, 0])
-    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, table = session['table'])
 
+@app.route('/similar_image', methods=['POST', 'GET'])
+def simimage():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        count = int(request.form['count'])
+        print(query_column)
+
+        print(request.files)
+        if 'file' not in request.files:
+            return 'No file part'
+        
+        file = request.files['file']
+        if file.filename == '':
+            return 'No selected file'
+        print(file.filename)
+
+        filename = secure_filename(file.filename)
+        
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column}__mul FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        # print(qry_column_info)
+        for i,img in enumerate(qry_column_info):
+            need_path = img[0][1:]
+            qurey_path = f"./multimedia/{filename}"
+            match_val.append([compute_image_similarity(model_i2i, need_path, qurey_path), need_path])
+
+        match_val.sort(reverse=True)
+        print(match_val)
+        for i in range(min(count, len(match_val))):
+            match_path.append("." + match_val[i][1])
+            match_name.append(match_path[-1].split("/")[-1])
+
+        print("*********************")
+        print(match_path)
+        print("*********************")
+
+        return render_template("similar_image.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+    
+    return render_template("similar_image.html", cnt=True)
+
+@app.route('/exact_image', methods=['POST', 'GET'])
+def exctimage():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        # count = int(request.form['count'])
+        print(query_column)
+
+        print(request.files)
+        if 'file' not in request.files:
+            return 'No file part'
+        
+        file = request.files['file']
+        if file.filename == '':
+            return 'No selected file'
+        print(file.filename)
+
+        filename = secure_filename(file.filename)
+        
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column}__mul FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        need_paths = []
+
+        # print(qry_column_info)
+        for i,img in enumerate(qry_column_info):
+            need_path = img[0][1:]
+            need_paths.append(need_path)
+
+        print(need_paths)
+        
+
+        qurey_path = f"./multimedia/{filename}"
+        ouput_path = most_similar(need_paths, qurey_path)
+
+        match_path.append("." + ouput_path)
+        match_name.append(match_path[-1].split("/")[-1])
+
+        print("*********************")
+        print(match_path)
+        print("*********************")
+
+        return render_template("similar_image.html", match_path = match_path, match_name = match_name, column = query_column)
+    
+    return render_template("similar_image.html")
 
 @app.route('/logout')
 def logout():
