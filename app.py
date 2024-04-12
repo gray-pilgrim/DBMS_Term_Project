@@ -208,31 +208,37 @@ def create_table():
     return redirect('/login')
 
 @app.route('/view_database/table', methods=['POST'])
-def table():
+def table_get():
     if(request.method == 'POST'):
         if session.get('username') and session.get('dbname'):
             table = request.form['table_name']
-            table_info = runQuery(f'''
-                                    SELECT * FROM {table}
-                                ''', session['dbname'])
-            column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{table}';''', session['dbname'])
-            column_info = []
-            mul_info = []
+            session['table'] = table
+            return redirect('/view_database/view_table')
 
-            for c in table_info:
-                mul_info.append(list(c))
+@app.route('/view_database/view_table', methods=['GET', 'POST'])
+def table():
+    print(session['table'])
+    table_info = runQuery(f'''
+                            SELECT * FROM {session['table']}
+                        ''', session['dbname'])
+    column_names = runQuery(f'''SELECT column_name FROM information_schema.columns where table_name = '{session['table']}';''', session['dbname'])
+    column_info = []
+    mul_info = []
 
-            for i, column in enumerate(column_names):
-                cn = column[0]
-                if(cn.split('__')[-1] == 'mul'):
-                    column_info.append([cn.split('__')[0], 1])
-                    for j in range(len(table_info)):
-                        print(table_info[j][i].split('/'))
-                        mul_info[j][i] = table_info[j][i].split('/')[-1]
-                else:
-                    column_info.append([cn, 0])
-            return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
-        return 
+    for c in table_info:
+        mul_info.append(list(c))
+
+    for i, column in enumerate(column_names):
+        cn = column[0]
+        if(cn.split('__')[-1] == 'mul'):
+            column_info.append([cn.split('__')[0], 1])
+            for j in range(len(table_info)):
+                print(table_info[j][i].split('/'))
+                mul_info[j][i] = table_info[j][i].split('/')[-1]
+        else:
+            column_info.append([cn, 0])
+    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+
 
 @app.route('/logout')
 def logout():
