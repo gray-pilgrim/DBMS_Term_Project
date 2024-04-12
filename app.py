@@ -121,20 +121,25 @@ def dashboard():
     return redirect('/login')
 
 @app.route('/view_database', methods = ['GET','POST'])
-def view_database():    
+def view_database():  
+    print("jasd,sesjdkhskf")  
     # global databases
     if session.get('username'):
         if request.method == 'POST':
-            database_id = request.form.get('db')  # Retrieve 'db' from the form data
-            print(database_id)
-            if database_id is None:
-                # Handle the case when 'db' is not found in the form data
-                return "Error: 'db' parameter not found in the form data"
-            session['dbname'] = session['username'] + "_" + database_id
-            print(database_id)
-            print("Mera database id")
+            print("asmhvdghsvnsvcgs")
+            if(not request.form):
+                return redirect('/dashboard')
+            else:
+                database_id = request.form.get('db')  # Retrieve 'db' from the form data
+                print(database_id)
+                # if database_id is None:
+                #     # Handle the case when 'db' is not found in the form data
+                #     return "Error: 'db' parameter not found in the form data"
+                session['dbname'] = session['username'] + "_" + database_id
+                print(database_id)
+            # print("Mera database id")
             # database_name = session['username']+database_id
-            user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
+            # user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
             user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
             list_databases = []
             
@@ -150,8 +155,9 @@ def view_database():
             AND table_type='BASE TABLE';\
             ", dbname=session['dbname'])
 
-            return render_template('view_database.html', databases = list_databases, user = Current_User, database = database_id, table_list = table_list)
-    
+            return render_template('view_database.html', databases = list_databases, user = 
+                                   Current_User, database = database_id, table_list = table_list)
+        return redirect('/dashboard')
     return redirect('/login')
 
 @app.route('/view_database/create_table', methods=['GET', 'POST'])
