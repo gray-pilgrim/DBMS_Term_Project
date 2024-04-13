@@ -7,10 +7,10 @@ from werkzeug.utils import secure_filename
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
-from modules.dl import load_model, compute_image_similarity
+from modules.dl import load_model, compute_image_similarity, cosine_similarity
 from modules.kdtree import most_similar
 
-model_i2i = load_model()
+model_i2i, model_t2t = load_model()
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
