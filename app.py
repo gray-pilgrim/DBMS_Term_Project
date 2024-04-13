@@ -88,7 +88,7 @@ def otp_verification():
         runQuery(query=query)
 
         runQuery(query=f"CREATE DATABASE {glb_info['username']}_{glb_info['database']};")
-        os.mkdir(f"../static/multimedia/{glb_info['username']}_{glb_info['database']}")
+        # os.mkdir(f"../static/multimedia/{glb_info['username']}_{glb_info['database']}")
         return redirect('/')
 
     return render_template('otp_verification.html')
