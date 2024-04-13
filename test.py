@@ -6,7 +6,6 @@ import requests
 import torch
 import torchaudio
 
-
 from moviepy.editor import VideoFileClip
 
 # Load the video file

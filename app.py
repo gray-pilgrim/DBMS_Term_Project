@@ -5,6 +5,7 @@ import os
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
+from modules.dl import GreedyCTCDecoder 
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -246,6 +247,32 @@ def logout():
     session.pop('database', None)
     return redirect('/login')
 
+
+
+def audio_caption_generate(SPEECH_FILE): 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device {device}")
+    bundle = torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+    print(f"Sample Rate: {bundle.sample_rate}")
+    print(f"Labels: {bundle.get_labels()}")
+    model = bundle.get_model().to(device)
+    print(model.__class__)
+
+    # waveform, sample_rate = torchaudio.load(SPEECH_FILE, format='wav')
+    waveform, sample_rate = torchaudio.load(SPEECH_FILE, format="mp3")
+    # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
+    waveform = waveform.to(device)
+    if sample_rate != bundle.sample_rate:
+        waveform = torchaudio.functional.resample(waveform, sample_rate, bundle.sample_rate)
+
+    with torch.inference_mode():
+        emission, _ = model(waveform)
+
+
+    decoder = GreedyCTCDecoder(labels=bundle.get_labels())
+    transcript = decoder(emission[0])
+
+    return transcript 
 
 
 
