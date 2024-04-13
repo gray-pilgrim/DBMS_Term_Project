@@ -4,15 +4,15 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import numpy as np
 import matplotlib.pyplot as plt
-# import spacy
+import spacy
 from sklearn.metrics.pairwise import cosine_similarity
 
 def load_model():
     # Load pre-trained VGG16 model without the top (fully connected) layers
     model_i2i = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-    # model_t2t = spacy.load("en_core_web_md")
-    # return model_i2i, model_t2t
-    return model_i2i, None
+    model_t2t = spacy.load("en_core_web_md")
+    return model_i2i, model_t2t
+    # return model_i2i, None
 
 def load_and_preprocess_image(image_path, target_size=(224, 224)):
     img = image.load_img(image_path, target_size=target_size)

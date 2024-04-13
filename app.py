@@ -7,7 +7,7 @@ from PIL import Image
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
-from modules.dl import load_model, compute_image_similarity
+from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity
 from modules.kdtree import most_similar
 
 model_i2i, model_t2t = load_model()
@@ -442,6 +442,81 @@ def exctimage():
         return render_template("similar_image.html", match_path = match_path, match_name = match_name, column = query_column)
     
     return render_template("similar_image.html")     
+
+@app.route('/text_image', methods=['POST', 'GET'])
+def textimage():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        count = int(request.form['count'])
+        query_text = request.form['text']
+        print(query_column, query_text)
+
+        
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column}__mul FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        # print(qry_column_info)
+        for i,img in enumerate(qry_column_info):
+            need_path = img[0][1:]
+            txt_path = os.path.splitext(need_path)[0] + ".txt"
+            print(txt_path)
+            with open(txt_path, 'r') as file:
+                txt = file.read()
+            match_val.append([compute_semantic_similarity(model_t2t, txt, query_text), need_path])
+
+        match_val.sort(reverse=True)
+        print(match_val)
+        for i in range(min(count, len(match_val))):
+            match_path.append("." + match_val[i][1])
+            match_name.append(match_path[-1].split("/")[-1])
+
+        # print("*********************")
+        # print(match_path)
+        # print("*********************")
+
+        return render_template("text_image.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+    
+        # return render_template("text_image.html", cnt=True)
+    return render_template("text_image.html", cnt=True)
+
+@app.route('/text_text', methods=['POST', 'GET'])
+def texttext():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        count = int(request.form['count'])
+        query_text = request.form['text']
+        print(query_column, query_text)
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column} FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        # print(qry_column_info)
+        for i,txt in enumerate(qry_column_info):
+            match_val.append([compute_semantic_similarity(model_t2t, txt[0], query_text), txt[0]])
+
+        match_val.sort(reverse=True)
+        print(match_val)
+        for i in range(min(count, len(match_val))):
+            match_path.append(match_val[i][1])
+
+        # print("*********************")
+        print(match_path)
+        # print("*********************")
+
+        return render_template("text_text.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+    
+        # return render_template("text_image.html", cnt=True)
+    return render_template("text_text.html", cnt=True)
+
 
 
 @app.route('/logout')
