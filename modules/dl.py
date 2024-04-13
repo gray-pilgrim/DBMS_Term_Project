@@ -6,12 +6,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 import spacy
 from sklearn.metrics.pairwise import cosine_similarity
+import os
+import IPython
+import matplotlib
+import matplotlib.pyplot as plt
+import requests
+import torch
+import torchaudio
+from moviepy.editor import VideoFileClip
+
 
 def load_model():
     # Load pre-trained VGG16 model without the top (fully connected) layers
     model_i2i = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
     model_t2t = spacy.load("en_core_web_md")
-    return model_i2i, model_t2t
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device {device}")
+    bundle = torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+    print(f"Sample Rate: {bundle.sample_rate}")
+    print(f"Labels: {bundle.get_labels()}")
+    model = bundle.get_model().to(device)
+
+    model_a2t = [device, bundle, model]
+
+    return model_i2i, model_t2t, model_a2t
     # return model_i2i, None
 
 def load_and_preprocess_image(image_path, target_size=(224, 224)):
@@ -55,3 +74,49 @@ def compute_semantic_similarity(nlp, text1, text2):
     cosine_sim = cosine_similarity(embedding1, embedding2)
     
     return cosine_sim[0][0]
+
+def text_from_audio(model_a2t, audio_path):
+    SPEECH_FILE = audio_path
+    # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
+    waveform, sample_rate = torchaudio.load(SPEECH_FILE, format="mp3")
+    # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
+    waveform = waveform.to(model_a2t[0])
+    if sample_rate != model_a2t[1].sample_rate:
+        waveform = torchaudio.functional.resample(waveform, sample_rate, bundle.sample_rate)
+
+
+    with torch.inference_mode():
+        emission, _ = model_a2t[2](waveform)
+
+    plt.imshow(emission[0].cpu().T)
+    plt.title("Classification result")
+    plt.xlabel("Frame (time-axis)")
+    plt.ylabel("Class")
+    plt.show()
+    print("Class labels:", model_a2t[1].get_labels())
+
+
+
+    class GreedyCTCDecoder(torch.nn.Module):
+        def __init__(self, labels, blank=0):
+            super().__init__()
+            self.labels = labels
+            self.blank = blank
+
+        def forward(self, emission: torch.Tensor) -> str:
+            """Given a sequence emission over labels, get the best path string
+            Args:
+            emission (Tensor): Logit tensors. Shape `[num_seq, num_label]`.
+            Returns:
+            str: The resulting transcript
+            """
+            indices = torch.argmax(emission, dim=-1) # [num_seq,]
+            indices = torch.unique_consecutive(indices, dim=-1)
+            indices = [i for i in indices if i != self.blank]
+            return "".join([self.labels[i] for i in indices])
+
+
+    decoder = GreedyCTCDecoder(labels=model_a2t[1].get_labels())
+    transcript = decoder(emission[0])
+
+    return transcript

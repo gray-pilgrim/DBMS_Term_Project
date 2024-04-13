@@ -10,7 +10,7 @@ from modules.models import User
 from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity
 from modules.kdtree import most_similar
 
-model_i2i, model_t2t = load_model()
+model_i2i, model_t2t, model_a2t = load_model()
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -261,6 +261,15 @@ def table():
             column_info.append([cn, 0])
     return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, table = session['table'])
 
+def write_to_file(file_path, content):
+    with open(file_path, 'w') as file:
+        file.write(content)
+
+def extract_name(file_path):
+    file_name = os.path.basename(file_path)  # Get the base name of the file
+    name_only = os.path.splitext(file_name)[0]  # Extract the name part without extension
+    return name_only
+
 
 @app.route('/view_database/add_row1', methods=['GET', 'POST'])
 def add_row1():
@@ -321,6 +330,12 @@ def add_row1():
                     return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info,error='No file selected')
                 print(file.filename)
 
+                f1 = extract_name(file.filename)
+
+                file_path2 =  f"./static/multimedia/{session['dbname']}/{f1}.txt"
+                write_to_file(file_path2,"vhhfhfhy")
+                
+
                 file_path1 =  f"'../static/multimedia/{session['dbname']}/{file.filename}'"
                 insert_vals.append(file_path1)
 
@@ -343,7 +358,8 @@ def add_row1():
         print(insert_vals_str)
         strr = f"INSERT INTO {session['table']} VALUES ({insert_vals_str})"
         runQuery(strr,session['dbname'])
-        return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+        # return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+        return redirect('/view_database/view_table')
 
 @app.route('/similar_image', methods=['POST', 'GET'])
 def simimage():
