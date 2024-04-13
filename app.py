@@ -318,7 +318,7 @@ def add_row1():
 
                 file = request.files[i[0]]
                 if file.filename == '':
-                    return 'No selected file'
+                    return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info,error='No file selected')
                 print(file.filename)
 
                 file_path1 =  f"'../static/multimedia/{session['dbname']}/{file.filename}'"
@@ -328,8 +328,14 @@ def add_row1():
                 
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
             else :
-                value1 = f"'{request.form.get(i[0])}'"
+                value1 = f"{request.form.get(i[0])}"
+                print(" onel")
+                if value1.isspace() or value1 == '':
+                    print("Error")
+                    return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, error='Empty field detected')
                 # value1 = request.form.get
+                
+                value1 = "'"+value1+"'"
                 insert_vals.append(value1)
 
         print("fnioienfowinwngowngiowengikwengokjwnegfvjowengvol")
@@ -337,7 +343,7 @@ def add_row1():
         print(insert_vals_str)
         strr = f"INSERT INTO {session['table']} VALUES ({insert_vals_str})"
         runQuery(strr,session['dbname'])
-        return "doneeeeeeeeeee"
+        return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
 
 @app.route('/similar_image', methods=['POST', 'GET'])
 def simimage():
