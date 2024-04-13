@@ -7,6 +7,10 @@ from PIL import Image
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
+from modules.dl import load_model, compute_image_similarity, cosine_similarity
+from modules.kdtree import most_similar
+
+model_i2i, model_t2t = load_model()
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -17,6 +21,12 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'secret_key'
 databases = ''
+
+UPLOAD_FOLDER = './multimedia'
+if not os.path.exists(UPLOAD_FOLDER):
+    print("no path")
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 global glb_info, glb_otp
 glb_info,glb_otp = None,None
@@ -144,28 +154,34 @@ def view_database():
                 #     return "Error: 'db' parameter not found in the form data"
                 session['dbname'] = session['username'] + "_" + database_id
                 print(database_id)
+                return redirect('/database_page')
             # print("Mera database id")
             # database_name = session['username']+database_id
             # user_databases = runQuery(query=f"SELECT database_name FROM  user_database_list WHERE username = '{session['username']}'")
-            user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
-            list_databases = []
-            
-            Current_User = User(user_info)
-            print(runQuery(query="SELECT table_name\
-            FROM information_schema.tables\
-            WHERE table_schema='public'\
-            AND table_type='BASE TABLE';\
-            ", dbname=session['dbname']))
-            table_list = runQuery(query="SELECT table_name\
-            FROM information_schema.tables\
-            WHERE table_schema='public'\
-            AND table_type='BASE TABLE';\
-            ", dbname=session['dbname'])
-
-            return render_template('view_database.html', databases = list_databases, user = 
-                                   Current_User, database = database_id, table_list = table_list)
         return redirect('/dashboard')
-    return redirect('/login')
+    return redirect('/login')\
+    
+@app.route('/database_page')
+def database():
+
+    database_id = session['dbname'].split("_")[-1]
+    user_info = runQuery(query=f"SELECT DISTINCT username,email FROM  user_database_list WHERE username = '{session['username']}'")[0]
+    list_databases = []
+    
+    Current_User = User(user_info)
+    print(runQuery(query="SELECT table_name\
+    FROM information_schema.tables\
+    WHERE table_schema='public'\
+    AND table_type='BASE TABLE';\
+    ", dbname=session['dbname']))
+    table_list = runQuery(query="SELECT table_name\
+    FROM information_schema.tables\
+    WHERE table_schema='public'\
+    AND table_type='BASE TABLE';\
+    ", dbname=session['dbname'])
+
+    return render_template('view_database.html', databases = list_databases, user = 
+                            Current_User, database = database_id, table_list = table_list)
 
 @app.route('/view_database/create_table', methods=['GET', 'POST'])
 def create_table():
@@ -243,7 +259,7 @@ def table():
                 mul_info[j][i] = table_info[j][i].split('/')[-1]
         else:
             column_info.append([cn, 0])
-    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, table = session['table'])
 
 
 @app.route('/view_database/add_row1', methods=['GET', 'POST'])

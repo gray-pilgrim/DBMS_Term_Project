@@ -4,11 +4,14 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input
 import numpy as np
 import matplotlib.pyplot as plt
+import spacy
+from sklearn.metrics.pairwise import cosine_similarity
 
 def load_model():
     # Load pre-trained VGG16 model without the top (fully connected) layers
     model_i2i = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-    return model_i2i
+    model_t2t = spacy.load("en_core_web_md")
+    return model_i2i, model_t2t
 
 def load_and_preprocess_image(image_path, target_size=(224, 224)):
     img = image.load_img(image_path, target_size=target_size)
@@ -38,3 +41,16 @@ def compute_image_similarity(model, image_path1, image_path2):
 
     return similarity
 
+def compute_semantic_similarity(nlp, text1, text2):
+    # Compute word embeddings for each text
+    doc1 = nlp(text1)
+    doc2 = nlp(text2)
+    
+    # Compute the average word embedding for each text
+    embedding1 = doc1.vector.reshape(1, -1)
+    embedding2 = doc2.vector.reshape(1, -1)
+    
+    # Compute cosine similarity between the embeddings
+    cosine_sim = cosine_similarity(embedding1, embedding2)
+    
+    return cosine_sim[0][0]
