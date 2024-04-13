@@ -7,7 +7,7 @@ from PIL import Image
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
-from modules.dl import load_model, compute_image_similarity, cosine_similarity
+from modules.dl import load_model, compute_image_similarity
 from modules.kdtree import most_similar
 
 model_i2i, model_t2t = load_model()
@@ -339,23 +339,103 @@ def add_row1():
         runQuery(strr,session['dbname'])
         return "doneeeeeeeeeee"
 
+@app.route('/similar_image', methods=['POST', 'GET'])
+def simimage():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        count = int(request.form['count'])
+        print(query_column)
+
+        print(request.files)
+        if 'file' not in request.files:
+            return 'No file part'
+        
+        file = request.files['file']
+        if file.filename == '':
+            return 'No selected file'
+        print(file.filename)
+
+        filename = secure_filename(file.filename)
+        
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column}__mul FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        # print(qry_column_info)
+        for i,img in enumerate(qry_column_info):
+            need_path = img[0][1:]
+            qurey_path = f"./multimedia/{filename}"
+            match_val.append([compute_image_similarity(model_i2i, need_path, qurey_path), need_path])
+
+        match_val.sort(reverse=True)
+        print(match_val)
+        for i in range(min(count, len(match_val))):
+            match_path.append("." + match_val[i][1])
+            match_name.append(match_path[-1].split("/")[-1])
+
+        print("*********************")
+        print(match_path)
+        print("*********************")
+
+        return render_template("similar_image.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+    
+    return render_template("similar_image.html", cnt=True)
+
+@app.route('/exact_image', methods=['POST', 'GET'])
+def exctimage():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        # count = int(request.form['count'])
+        print(query_column)
+
+        print(request.files)
+        if 'file' not in request.files:
+            return 'No file part'
+        
+        file = request.files['file']
+        if file.filename == '':
+            return 'No selected file'
+        print(file.filename)
+
+        filename = secure_filename(file.filename)
+        
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column}__mul FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        need_paths = []
+
+        # print(qry_column_info)
+        for i,img in enumerate(qry_column_info):
+            need_path = img[0][1:]
+            need_paths.append(need_path)
+
+        print(need_paths)
         
 
+        qurey_path = f"./multimedia/{filename}"
+        ouput_path = most_similar(need_paths, qurey_path)
 
-# @app.route('/view_database/add_row', methods=['GET', 'POST'])
-# def add_row():
+        match_path.append("." + ouput_path)
+        match_name.append(match_path[-1].split("/")[-1])
+
+        print("*********************")
+        print(match_path)
+        print("*********************")
+
+        return render_template("similar_image.html", match_path = match_path, match_name = match_name, column = query_column)
     
-#     for i in range(len(column_names)):
-#         if column_info[i][1] == 1:
-#             file = request.files.get('text_field_' + str(i + 1))  # Adjusted index to start from 1
-#             if file:
-#                 if file.filename == '':
-#                     return render_template('table.html', column_info=column_info, table_info=table_info, mul_info=mul_info)
-#                 print("Karo jodi bhutey dhorey")
-#                 filename = secure_filename(file.filename)
-#                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#                 file_path = 'images1/' + filename 
-#     return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+    return render_template("similar_image.html")     
 
 
 @app.route('/logout')
