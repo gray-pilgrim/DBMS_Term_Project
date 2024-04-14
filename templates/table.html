@@ -26,10 +26,10 @@
     {% set out_l_i = loop.index %}
         {% if c[1] == 1 %}
         <label for="file">Select the file:</label>
-        <input type="file" id="{{ c[0] }}" name="{{ c[0] }}" />
+        <input type="file" id="{{ c[0] }}" name="{{ c[0] }}" required />
         {% else %}       
         <div class="form-group">
-            <input type="text" class="form-control" id="{{ c[0] }}" name="{{ c[0] }}">
+            <input type="text" class="form-control" id="{{ c[0] }}" name="{{ c[0] }}" required>
         </div>
         <h>text_field_{{ out_l_i }}</h>
         {% endif %}
@@ -68,6 +68,8 @@
 
     <button class="button-link" onclick="window.location.href='/exact_image';">Exact image</button>
     <button class="button-link" onclick="window.location.href='/similar_image';">Similar image</button>
+    <button class="button-link" onclick="window.location.href='/text_image';">Text to image Find</button>
+    <button class="button-link" onclick="window.location.href='/text_text';">Text to text Find</button>
 </body>
 
 </html>

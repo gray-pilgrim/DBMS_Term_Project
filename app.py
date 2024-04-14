@@ -7,10 +7,10 @@ from PIL import Image
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
-from modules.dl import load_model, compute_image_similarity
+from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity
 from modules.kdtree import most_similar
 
-model_i2i, model_t2t = load_model()
+model_i2i, model_t2t, model_a2t = load_model()
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -261,6 +261,15 @@ def table():
             column_info.append([cn, 0])
     return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, table = session['table'])
 
+def write_to_file(file_path, content):
+    with open(file_path, 'w') as file:
+        file.write(content)
+
+def extract_name(file_path):
+    file_name = os.path.basename(file_path)  # Get the base name of the file
+    name_only = os.path.splitext(file_name)[0]  # Extract the name part without extension
+    return name_only
+
 
 @app.route('/view_database/add_row1', methods=['GET', 'POST'])
 def add_row1():
@@ -321,6 +330,12 @@ def add_row1():
                     return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info,error='No file selected')
                 print(file.filename)
 
+                f1 = extract_name(file.filename)
+
+                file_path2 =  f"./static/multimedia/{session['dbname']}/{f1}.txt"
+                write_to_file(file_path2,"vhhfhfhy")
+                
+
                 file_path1 =  f"'../static/multimedia/{session['dbname']}/{file.filename}'"
                 insert_vals.append(file_path1)
 
@@ -343,7 +358,8 @@ def add_row1():
         print(insert_vals_str)
         strr = f"INSERT INTO {session['table']} VALUES ({insert_vals_str})"
         runQuery(strr,session['dbname'])
-        return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+        # return  render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info)
+        return redirect('/view_database/view_table')
 
 @app.route('/similar_image', methods=['POST', 'GET'])
 def simimage():
@@ -442,6 +458,81 @@ def exctimage():
         return render_template("similar_image.html", match_path = match_path, match_name = match_name, column = query_column)
     
     return render_template("similar_image.html")     
+
+@app.route('/text_image', methods=['POST', 'GET'])
+def textimage():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        count = int(request.form['count'])
+        query_text = request.form['text']
+        print(query_column, query_text)
+
+        
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column}__mul FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        # print(qry_column_info)
+        for i,img in enumerate(qry_column_info):
+            need_path = img[0][1:]
+            txt_path = os.path.splitext(need_path)[0] + ".txt"
+            print(txt_path)
+            with open(txt_path, 'r') as file:
+                txt = file.read()
+            match_val.append([compute_semantic_similarity(model_t2t, txt, query_text), need_path])
+
+        match_val.sort(reverse=True)
+        print(match_val)
+        for i in range(min(count, len(match_val))):
+            match_path.append("." + match_val[i][1])
+            match_name.append(match_path[-1].split("/")[-1])
+
+        # print("*********************")
+        # print(match_path)
+        # print("*********************")
+
+        return render_template("text_image.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+    
+        # return render_template("text_image.html", cnt=True)
+    return render_template("text_image.html", cnt=True)
+
+@app.route('/text_text', methods=['POST', 'GET'])
+def texttext():
+    if(request.method == 'POST'):
+        query_column = request.form['column']
+        count = int(request.form['count'])
+        query_text = request.form['text']
+        print(query_column, query_text)
+
+        qry_column_info = runQuery(f'''
+                            SELECT {query_column} FROM {session['table']}
+                        ''', session['dbname'])
+        match_path = []
+        match_name = []
+        match_val = []
+
+        # print(qry_column_info)
+        for i,txt in enumerate(qry_column_info):
+            match_val.append([compute_semantic_similarity(model_t2t, txt[0], query_text), txt[0]])
+
+        match_val.sort(reverse=True)
+        print(match_val)
+        for i in range(min(count, len(match_val))):
+            match_path.append(match_val[i][1])
+
+        # print("*********************")
+        print(match_path)
+        # print("*********************")
+
+        return render_template("text_text.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+    
+        # return render_template("text_image.html", cnt=True)
+    return render_template("text_text.html", cnt=True)
+
 
 
 @app.route('/logout')

@@ -10,13 +10,13 @@ import torchaudio
 from moviepy.editor import VideoFileClip
 
 # Load the video file
-video = VideoFileClip("video.mp4")
+# video = VideoFileClip("video.mp4")
 
-# Extract the audio from the video
-audio = video.audio
+# # Extract the audio from the video
+# audio = video.audio
 
-# Write the audio to a file
-audio.write_audiofile("audio.mp3")
+# # Write the audio to a file
+# audio.write_audiofile("audio.mp3")
 
 
 # SPEECH_URL = "https://keithito.com/LJ-Speech-Dataset/LJ025-0076.wav"
@@ -30,7 +30,8 @@ audio.write_audiofile("audio.mp3")
 # SPEECH_FILE = "harvard.wav"
 
 
-SPEECH_FILE = "audio.mp3"
+# SPEECH_FILE = "harvard.wav"
+SPEECH_FILE = "greet.mp3"
 # if not os.path.exists(SPEECH_FILE):
     # os.makedirs("_assets", exist_ok=True)
     # with open(SPEECH_FILE, "wb") as file:
@@ -47,7 +48,7 @@ print(f"Labels: {bundle.get_labels()}")
 model = bundle.get_model().to(device)
 print(model.__class__)
 
-# waveform, sample_rate = torchaudio.load(SPEECH_FILE, format='wav')
+# waveform, sample_rate = torchaudio.load(SPEECH_FILE)
 waveform, sample_rate = torchaudio.load(SPEECH_FILE, format="mp3")
 # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
 waveform = waveform.to(device)
