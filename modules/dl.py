@@ -19,7 +19,8 @@ from moviepy.editor import VideoFileClip
 def load_model():
     # Load pre-trained VGG16 model without the top (fully connected) layers
     model_i2i = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-    model_t2t = spacy.load("en_core_web_md")
+    model_t2t = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+    # model_t2t = spacy.load("en_core_web_md")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device {device}")
