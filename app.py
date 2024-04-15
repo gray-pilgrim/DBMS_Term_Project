@@ -7,7 +7,7 @@ from PIL import Image
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
-from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity
+from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity, text_from_audio, text_from_video
 from modules.kdtree import most_similar
 
 model_i2i, model_t2t, model_a2t = load_model()
@@ -331,9 +331,6 @@ def add_row1():
                 print(file.filename)
 
                 f1 = extract_name(file.filename)
-
-                file_path2 =  f"./static/multimedia/{session['dbname']}/{f1}.txt"
-                write_to_file(file_path2,"vhhfhfhy")
                 
 
                 file_path1 =  f"'../static/multimedia/{session['dbname']}/{file.filename}'"
@@ -342,6 +339,15 @@ def add_row1():
                 filename = secure_filename(file.filename)
                 
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+
+                file_path2 =  f"./static/multimedia/{session['dbname']}/{f1}.txt"
+                caption = "op"
+                if(file.filename.split(".")[-1] in ["mp3", "wav"]):
+                    caption = text_from_audio(model_a2t, file_path1[2:-1])
+                elif(file.filename.split(".")[-1] in ["mp4"]):
+                    caption = text_from_video(model_a2t, file_path1[2:-1])
+                write_to_file(file_path2,caption)
+
             else :
                 value1 = f"{request.form.get(i[0])}"
                 print(" onel")
@@ -483,6 +489,7 @@ def textimage():
             print(txt_path)
             with open(txt_path, 'r') as file:
                 txt = file.read()
+            print(txt, query_text)
             match_val.append([compute_semantic_similarity(model_t2t, txt, query_text), need_path])
 
         match_val.sort(reverse=True)

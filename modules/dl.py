@@ -82,20 +82,11 @@ def text_from_audio(model_a2t, audio_path):
     # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
     waveform = waveform.to(model_a2t[0])
     if sample_rate != model_a2t[1].sample_rate:
-        waveform = torchaudio.functional.resample(waveform, sample_rate, bundle.sample_rate)
+        waveform = torchaudio.functional.resample(waveform, sample_rate, model_a2t[1].sample_rate)
 
 
     with torch.inference_mode():
         emission, _ = model_a2t[2](waveform)
-
-    plt.imshow(emission[0].cpu().T)
-    plt.title("Classification result")
-    plt.xlabel("Frame (time-axis)")
-    plt.ylabel("Class")
-    plt.show()
-    print("Class labels:", model_a2t[1].get_labels())
-
-
 
     class GreedyCTCDecoder(torch.nn.Module):
         def __init__(self, labels, blank=0):
@@ -118,5 +109,59 @@ def text_from_audio(model_a2t, audio_path):
 
     decoder = GreedyCTCDecoder(labels=model_a2t[1].get_labels())
     transcript = decoder(emission[0])
+
+    transcript = str(transcript).lower()
+    transcript = transcript.split("|")
+    transcript = " ".join(transcript)
+
+    return transcript
+
+def text_from_video(model_a2t, video_path):
+    # Load the video file
+    video = VideoFileClip(video_path)
+
+    # # Extract the audio from the video
+    audio = video.audio
+
+    # # Write the audio to a file
+    audio.write_audiofile("audio.mp3")
+
+    SPEECH_FILE = "audio.mp3"
+    # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
+    waveform, sample_rate = torchaudio.load(SPEECH_FILE, format="mp3")
+    # waveform, sample_rate = torchaudio.load(SPEECH_FILE)
+    waveform = waveform.to(model_a2t[0])
+    if sample_rate != model_a2t[1].sample_rate:
+        waveform = torchaudio.functional.resample(waveform, sample_rate, model_a2t[1].sample_rate)
+
+
+    with torch.inference_mode():
+        emission, _ = model_a2t[2](waveform)
+
+    class GreedyCTCDecoder(torch.nn.Module):
+        def __init__(self, labels, blank=0):
+            super().__init__()
+            self.labels = labels
+            self.blank = blank
+
+        def forward(self, emission: torch.Tensor) -> str:
+            """Given a sequence emission over labels, get the best path string
+            Args:
+            emission (Tensor): Logit tensors. Shape `[num_seq, num_label]`.
+            Returns:
+            str: The resulting transcript
+            """
+            indices = torch.argmax(emission, dim=-1) # [num_seq,]
+            indices = torch.unique_consecutive(indices, dim=-1)
+            indices = [i for i in indices if i != self.blank]
+            return "".join([self.labels[i] for i in indices])
+
+
+    decoder = GreedyCTCDecoder(labels=model_a2t[1].get_labels())
+    transcript = decoder(emission[0])
+
+    transcript = str(transcript).lower()
+    transcript = transcript.split("|")
+    transcript = " ".join(transcript)
 
     return transcript
