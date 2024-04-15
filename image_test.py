@@ -1,51 +1,78 @@
-##################################################
-## import packages
-##################################################
-
-from transformers import GPT2TokenizerFast, ViTImageProcessor, VisionEncoderDecoderModel
-from torch.utils.data import Dataset
-from torchtext.data import get_tokenizer
-import requests
-import torch
 import numpy as np
 from PIL import Image
-import pickle
-# from torchvision import transforms
-# from datasets import load_dataset
-# import torch.nn as nn
-import matplotlib.pyplot as plt
+from skimage.feature import graycomatrix, graycoprops
+from sklearn.neighbors import KDTree
+import librosa
 import os
-from tqdm import tqdm
 
-import warnings
-warnings.filterwarnings('ignore')
+# Function to extract features from an image
+def extract_features(image_path):
+    with Image.open(image_path) as img:
+        img = img.convert("RGB")
+        img_array = np.array(img)
+        
+        # 1. Calculate average color as feature
+        average_color = np.mean(img_array, axis=(0, 1))
+        
+        # 2. Calculate color histogram as feature
+        color_histogram = np.histogram(img_array.reshape(-1, 3), bins=256, range=[0, 256])[0]
+        
+        # 3. Calculate texture features using GLCM
+        gray_image = img.convert("L")
+        gray_array = np.array(gray_image)
+        glcm = graycomatrix(gray_array, [1], [0, np.pi/4, np.pi/2, 3*np.pi/4], symmetric=True, normed=True)
+        contrast = graycoprops(glcm, 'contrast').ravel()
+        correlation = graycoprops(glcm, 'correlation').ravel()
+        texture_features = np.concatenate([contrast, correlation])
+        
+        # Combine all features
+        combined_features = np.concatenate([average_color, color_histogram, texture_features])
+        
+    return combined_features
 
-model_raw = VisionEncoderDecoderModel.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+# Function to extract MFCC features from audio
+def extract_features_audio(audio_path, sr=22050, n_mfcc=13):
+    # Load audio file
+    y, sr = librosa.load(audio_path, sr=sr)
+    
+    # Extract MFCC features
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+    
+    # Flatten the MFCC matrix into a feature vector
+    mfccs_flattened = np.mean(mfccs, axis=1)
+    
+    return mfccs_flattened
 
-image_processor = ViTImageProcessor.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
-tokenizer       = GPT2TokenizerFast.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
 
-def show_n_generate(url, greedy = True, model = model_raw):
-    image = Image.open(requests.get(url, stream =True).raw)
-    pixel_values   = image_processor(image, return_tensors ="pt").pixel_values
-    plt.imshow(np.asarray(image))
-    plt.show()
 
-    if greedy:
-        generated_ids  = model.generate(pixel_values, max_new_tokens = 30)
-    else:
-        generated_ids  = model.generate(
-            pixel_values,
-            do_sample=True,
-            max_new_tokens = 30,
-            top_k=5)
-    generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    print(generated_text)
+def most_similar_audio(need_paths, query_path):
+    # Directory containing the images
 
-url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-# url = "https://raw.githubusercontent.com/michael-franke/npNLG/main/neural_pragmatic_nlg/pics/06-3DS-example.jpg"
-# url = "https://img.welt.de/img/sport/mobile102025155/9292509877-ci102l-w1024/hrubesch-rummenigge-BM-Berlin-Gijon-jpg.jpg"
-# url = "https://faroutmagazine.co.uk/static/uploads/2021/09/The-Cover-Uncovered-The-severity-of-Rage-Against-the-Machines-political-message.jpg"
-# url = "https://media.npr.org/assets/img/2022/03/13/2ukraine-stamp_custom-30c6e3889c98487086d76869f8ba6a8bfd2fd5a1.jpg"
+    # List to store image paths and corresponding features
+    image_paths = need_paths
+    features = []
 
-show_n_generate(url, greedy = False)
+    # Loop through the images directory to extract features from each image
+    for image_path in need_paths:
+        feature = extract_features_audio(image_path)
+        features.append(feature)
+
+    # Convert features list to numpy array
+    features_array = np.array(features)
+
+    # Build the KD-tree
+    kd_tree = KDTree(features_array)
+
+    # Select a random image as the query image
+    query_image_path = query_path
+    query_feature = extract_features_audio(query_image_path)
+
+    # Number of nearest neighbors to find
+    k = 1
+
+    # Search for the nearest neighbors to the query feature
+    distances, indices = kd_tree.query([query_feature], k=k)
+
+    return image_paths[indices[0][0]]
+
+print(most_similar_audio(["audio.mp3", "greet.mp3", "recording.mp3"], "greet.mp3"))

@@ -7,10 +7,11 @@ from PIL import Image
 from modules.mailsend import OTP_send
 from modules.runquery import runQuery
 from modules.models import User
-from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity, text_from_audio, text_from_video
-from modules.kdtree import most_similar
+from modules.dl import load_model, compute_image_similarity, compute_semantic_similarity, text_from_audio, text_from_video, text_from_image
+from modules.kdtree import most_similar, most_similar_audio
 
-model_i2i, model_t2t, model_a2t = load_model()
+model_i2i, model_t2t, model_a2t, model_i2t = load_model()
+print("All model loaded")
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -194,7 +195,7 @@ def create_table():
                 Current_User = User(user_info)
                 if not table_name:
                     return "Error: 'eid' parameter not found in the form data"
-                type = {"text":"VARCHAR(1024)", "time" : "TIME", "date": "DATE", "image" : "VARCHAR(1024)", "integer" : "INT",  "image" : "VARCHAR(1024)", "audio" : "VARCHAR(1024)", "double" : "DOUBLE(11, 6)"}
+                type = {"text":"VARCHAR(1024)", "time" : "TIME", "date": "DATE", "image" : "VARCHAR(1024)", "video" : "VARCHAR(1024)",  "image" : "VARCHAR(1024)", "audio" : "VARCHAR(1024)", "double" : "DOUBLE(11, 6)"}
                 # Construct the SQL query to create the table
                 columns = []
                 for i in range(1, num_attributes + 1):
@@ -250,6 +251,8 @@ def table():
     for c in table_info:
         mul_info.append(list(c))
 
+    img = False
+
     for i, column in enumerate(column_names):
         cn = column[0]
         if(cn.split('__')[-1] == 'mul'):
@@ -257,9 +260,11 @@ def table():
             for j in range(len(table_info)):
                 print(table_info[j][i].split('/'))
                 mul_info[j][i] = table_info[j][i].split('/')[-1]
+                if(mul_info[j][i].split(".")[-1] in ["jpg", "png", "jpeg"]):
+                    img = True
         else:
             column_info.append([cn, 0])
-    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, table = session['table'])
+    return render_template('table.html', column_info=column_info, table_info = table_info, mul_info = mul_info, table = session['table'], img=img)
 
 def write_to_file(file_path, content):
     with open(file_path, 'w') as file:
@@ -341,11 +346,13 @@ def add_row1():
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
 
                 file_path2 =  f"./static/multimedia/{session['dbname']}/{f1}.txt"
-                caption = "op"
+                caption = "a " + f1 + " here"
                 if(file.filename.split(".")[-1] in ["mp3", "wav"]):
                     caption = text_from_audio(model_a2t, file_path1[2:-1])
                 elif(file.filename.split(".")[-1] in ["mp4"]):
                     caption = text_from_video(model_a2t, file_path1[2:-1])
+                # elif(file.filename.split(".")[-1] in ["jpg", "png", "jpeg"]):
+                #     caption = text_from_image(model_i2t, file_path1[2:-1])
                 write_to_file(file_path2,caption)
 
             else :
@@ -482,9 +489,12 @@ def textimage():
         match_name = []
         match_val = []
 
+        image = False
         # print(qry_column_info)
         for i,img in enumerate(qry_column_info):
             need_path = img[0][1:]
+            if(need_path.split(".")[-1] in ["jpg", "png", "jpeg"]):
+                image = True
             txt_path = os.path.splitext(need_path)[0] + ".txt"
             print(txt_path)
             with open(txt_path, 'r') as file:
@@ -501,8 +511,8 @@ def textimage():
         # print("*********************")
         # print(match_path)
         # print("*********************")
-
-        return render_template("text_image.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True)
+        print(img, "*******************")
+        return render_template("text_image.html", match_path = match_path, match_name = match_name, column = query_column, cnt=True, img=image)
     
         # return render_template("text_image.html", cnt=True)
     return render_template("text_image.html", cnt=True)

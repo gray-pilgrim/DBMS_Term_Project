@@ -15,12 +15,34 @@ import torch
 import torchaudio
 from moviepy.editor import VideoFileClip
 
+##################################################
+## import packages
+##################################################
+
+from transformers import GPT2TokenizerFast, ViTImageProcessor, VisionEncoderDecoderModel
+from torch.utils.data import Dataset
+from torchtext.data import get_tokenizer
+import requests
+import torch
+import numpy as np
+from PIL import Image
+import pickle
+# from torchvision import transforms
+# from datasets import load_dataset
+# import torch.nn as nn
+import matplotlib.pyplot as plt
+import os
+from tqdm import tqdm
+
+import warnings
+warnings.filterwarnings('ignore')
+
 
 def load_model():
     # Load pre-trained VGG16 model without the top (fully connected) layers
     model_i2i = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-    model_t2t = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-    # model_t2t = spacy.load("en_core_web_md")
+    # model_t2t = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+    model_t2t = spacy.load("en_core_web_md")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device {device}")
@@ -31,7 +53,16 @@ def load_model():
 
     model_a2t = [device, bundle, model]
 
-    return model_i2i, model_t2t, model_a2t
+    # model_raw = VisionEncoderDecoderModel.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+
+    # image_processor = ViTImageProcessor.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+    # tokenizer       = GPT2TokenizerFast.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+
+    # model_i2t = [model_raw, image_processor, tokenizer]
+    model_i2t = None
+    print("Im 2 text model loaded")
+
+    return model_i2i, model_t2t, model_a2t, model_i2t
     # return model_i2i, None
 
 def load_and_preprocess_image(image_path, target_size=(224, 224)):
@@ -166,3 +197,20 @@ def text_from_video(model_a2t, video_path):
     transcript = " ".join(transcript)
 
     return transcript
+
+def text_from_image(model_i2t, path, greedy=True):
+    image = Image.open(path)
+    pixel_values   = model_i2t[1](image, return_tensors ="pt").pixel_values
+    # plt.imshow(np.asarray(image))
+    # plt.show()
+
+    if greedy:
+        generated_ids  = model_i2t[0].generate(pixel_values, max_new_tokens = 30)
+    else:
+        generated_ids  = model_i2t[0].generate(
+            pixel_values,
+            do_sample=True,
+            max_new_tokens = 30,
+            top_k=5)
+    generated_text = model_i2t[2].batch_decode(generated_ids, skip_special_tokens=True)[0]
+    return generated_text

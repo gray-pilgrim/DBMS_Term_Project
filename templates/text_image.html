@@ -116,11 +116,17 @@ style="padding-right: 3rem"
             <tbody>
             <tr>
                 <th>
-                    <div class="d-flex justify-content-around align-items-center">
-                        {% for path in match_path %}
+                  <div class="d-flex justify-content-around align-items-center">
+                    {% for path in match_path %}
+                        {% if img %}
                         <div class="con1">
                             <img class="img1" src='/{{path}}' alt="image"/>
                         </div>
+                        {% else %}
+                          <div>
+                            <a href="/{{path}}" class="btn btn-warning">{{match_name[loop.index-1]}}</a>
+                          </div>
+                        {% endif %}
                         {% endfor %}
                     </div>
                 </th>

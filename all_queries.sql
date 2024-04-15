@@ -19,4 +19,6 @@ INSERT INTO table1img VALUES ('ss2', '../static/multimedia/abir_newdb/i6.jpg');
 
 DELETE FROM table1img WHERE a1 = 'ss';
 DELETE FROM table1img WHERE a1 = 'mj';
+DELETE FROM natural_lives WHERE name = 'deer';
+DELETE FROM natural_lives WHERE name = 'dog';
 DELETE FROM table1img WHERE a2ig__mul = '../static/multimedia/abir_newdb/Screenshot_2.png';

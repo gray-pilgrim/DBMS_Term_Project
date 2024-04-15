@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 from skimage.feature import graycomatrix, graycoprops
 from sklearn.neighbors import KDTree
+import librosa
 import os
 
 # Function to extract features from an image
@@ -28,6 +29,51 @@ def extract_features(image_path):
         combined_features = np.concatenate([average_color, color_histogram, texture_features])
         
     return combined_features
+
+# Function to extract MFCC features from audio
+def extract_features_audio(audio_path, sr=22050, n_mfcc=13):
+    # Load audio file
+    y, sr = librosa.load(audio_path, sr=sr)
+    
+    # Extract MFCC features
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+    
+    # Flatten the MFCC matrix into a feature vector
+    mfccs_flattened = np.mean(mfccs, axis=1)
+    
+    return mfccs_flattened
+
+
+
+def most_similar_audio(need_paths, query_path):
+    # Directory containing the images
+
+    # List to store image paths and corresponding features
+    image_paths = need_paths
+    features = []
+
+    # Loop through the images directory to extract features from each image
+    for image_path in need_paths:
+        feature = extract_features_audio(image_path)
+        features.append(feature)
+
+    # Convert features list to numpy array
+    features_array = np.array(features)
+
+    # Build the KD-tree
+    kd_tree = KDTree(features_array)
+
+    # Select a random image as the query image
+    query_image_path = query_path
+    query_feature = extract_features_audio(query_image_path)
+
+    # Number of nearest neighbors to find
+    k = 1
+
+    # Search for the nearest neighbors to the query feature
+    distances, indices = kd_tree.query([query_feature], k=k)
+
+    return image_paths[indices[0][0]]
 
 def most_similar(need_paths, query_path):
     # Directory containing the images
@@ -58,3 +104,5 @@ def most_similar(need_paths, query_path):
     distances, indices = kd_tree.query([query_feature], k=k)
 
     return image_paths[indices[0][0]]
+
+
